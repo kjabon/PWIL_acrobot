@@ -1,5 +1,6 @@
 # PWIL_acrobot
 A case study in imitation learning with PWIL, applied to an Acrobot swingup task.
+This is the code supporting this [blog post](https://kjabon.github.io/blog/2023/ImitationLearningPWILAcrobot/)
 
 # Installation
 Aside from this code, from github, you need to install deepmind/acme, and [the acrobot env](https://github.com/dfki-ric-underactuated-lab/double_pendulum).
