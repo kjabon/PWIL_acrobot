@@ -1,5 +1,13 @@
 """Example running D4PG on continuous control tasks. Adapted from dm-acme example.
-This file can (with some quick edits) either run D4PG on acrobot swingup, or instead
+This file can (by changing finetuneFromPWIL argument) either run D4PG on acrobot swingup, 
+or instead fine tune from the previously trained PWIL policy, obtained by running runPWIL.py
+
+In the blog, I mentioned (but did not go into detail) some attempts to do fine tuning taking into account
+the change in the reward function from PWIL to D4PG.
+
+To replicate those attempts, you must go into acme/agents/jax/pwil/learning.py and comment out the relevant 
+gradient updates, for the policy and/or the value function. To do this a little more cleanly, it is recommended
+to copy all the PWIL backend files locally and use/edit those instead.
 
 """
 
