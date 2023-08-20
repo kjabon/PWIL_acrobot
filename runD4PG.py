@@ -1,18 +1,7 @@
-# Copyright 2018 DeepMind Technologies Limited. All rights reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+"""Example running D4PG on continuous control tasks. Adapted from dm-acme example.
+This file can (with some quick edits) either run D4PG on acrobot swingup, or instead
 
-"""Example running D4PG on continuous control tasks."""
+"""
 
 from absl import flags
 from acme.agents.jax import d4pg
@@ -45,19 +34,17 @@ trainDistributed = True
 trainFresh = True
 
 
-def build_experiment_config(task, plant = None):
+def build_experiment_config(task, plant = None, finetuneFromPWIL=False):
   """Builds D4PG experiment config which can be executed in different ways."""
 
   tensorboardDir = task + '/D4PG_finetune_both_from_critic_only/'
-  checkpointDir = '/home/kenny/acme/' + '{}/PWIL_rewardfix'.format(task)
 
-  # Bound of the distributional critic. The reward for control environments is
-  # normalized, not for gym locomotion environments hence the different scales.
-  # vmax_values = {
-  #     'gym': 1000.,
-  #     'control': 150.,
-  # }
-  # vmax = vmax_values[suite]
+  #Note, this will overwrite checkpoints from PWIL, so make sure a copy is saved!
+  if finetune:
+        checkpointDir = '/home/{}/acme/'.format(uname) + '{}/PWIL_rewardfix'.format(task)
+  else: 
+        checkpointDir = '/home/{}/acme/.format(uname) + {}/D4PG_reward_fix'.format(task)
+
   vmax = 10.
 
   def make_networks(
@@ -172,13 +159,11 @@ def launchDistributed(experiment_config, numActors=1,
 
 def main(_):
   robot = 'acrobot'
-  experiment_config = build_experiment_config(robot)
-  # rvb_ckpt_path = '/tmp/reverbCheckpoints/{}/D4PG/'.format(robot)
-  rvb_ckpt_path = None
+  experiment_config = build_experiment_config(robot, finetuneFromPWIL=False)
   numLearners=8
   if trainDistributed:
       launchDistributed(experiment_config=experiment_config, numActors=16,
-                        numLearners=numLearners, ckpt_path=rvb_ckpt_path)
+                        numLearners=numLearners, ckpt_path=None)
   else:
       import my_run_experiment as mre
       mre.run_experiment(experiment_config,
