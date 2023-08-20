@@ -1,4 +1,4 @@
-"""Example running PWIL on continuous control tasks.
+"""Example running PWIL on continuous control tasks. Adapted from dm-acme example.
 
 The network structure and hyperparameters are the same as the one used in the
 PWIL paper: https://arxiv.org/pdf/2006.04678.pdf.
@@ -35,22 +35,16 @@ import launchpad.context
 
 flags.DEFINE_integer('num_steps', 1_000_000,
                      'Number of environment steps to run for.')
-flags.DEFINE_bool('stabi', False,
-                     'Number of environment steps to run for.')
 
 FLAGS = flags.FLAGS
 terminals = ['gnome-terminal', 'gnome-terminal-tabs', 'xterm',
       'tmux_session', 'current_terminal', 'output_to_files']
 
-seed = 0
+uname = 'YOUR_USERNAME_HERE' #TODO
 
+seed = 0
 run_distributed = True
 trainFresh = False
-
-
-# env_name = 'HalfCheetah-v2'
-# num_demonstrations = 11
-
 evaluation_episodes = 10
 
 def make_networks(
@@ -100,38 +94,31 @@ def make_networks(
           lambda rng: critic.init(rng, dummy_obs, dummy_action), critic.apply))
 
 
-def build_experiment_config(env_name,eval=False,plant=None, stabi=None) -> experiments.ExperimentConfig:
+def build_experiment_config(env_name,eval=False,plant=None) -> experiments.ExperimentConfig:
   """Returns a configuration for PWIL experiments."""
 
   # Create an environment, grab the spec, and use it to create networks.
   # env_name = FLAGS.env_name
-  if stabi is None:
-    stabi = FLAGS.stabi
+ 
   tensorboardDir = env_name + '/PWIL_rewardfix'
-  checkpointDir = '/home/kenny/acme/' + '{}/PWIL_rewardfix'.format(env_name)
-  if stabi:
-    tensorboardDir += '_stabi'
-    checkpointDir += '_stabi'
+  checkpointDir = '/home/{}/acme/'.format(uname) + '{}/PWIL_rewardfix'.format(env_name)
+
 
   def environment_factory(seed: int) -> dm_env.Environment:
     del seed
-    return helpers.make_olympic_challenge_env(robot=env_name,eval=eval,plant=plant,stabi=stabi)
+    return helpers.make_olympic_challenge_env(robot=env_name,eval=eval,plant=plant)
 
   # Create d4pg agent
   d4pg_config = d4pg.D4PGConfig(
       learning_rate=5e-5, sigma=0.2, samples_per_insert=256)
   d4pg_builder = d4pg.D4PGBuilder(config=d4pg_config)
 
-  run_pwil_stabilize = stabi
-  numToUse = 1  # keep it low, increase slightly. 15000 would already be 10 demos, so you have ~66 in 1 already
-  # 100k for 10s would be 20.
-  if run_pwil_stabilize:
-    num_datasets_to_use = 0
-    num_stabi_ds_to_use = numToUse
-  else:
-    num_datasets_to_use = numToUse
-    num_stabi_ds_to_use = 0
 
+  num_datasets_to_use = 1  # keep it low, increase slightly. 15000 would already be 10 demos, so you have ~66 in 1 already
+  # 100k for 10s would be 20. 
+  
+  # the source datasets are made with runController.py, which records ILQR transitions with envlogger
+  # convert to PWIL-friendly transitions
   def make_demonstrations():
     ds = None
     j = 0
@@ -178,9 +165,7 @@ def build_experiment_config(env_name,eval=False,plant=None, stabi=None) -> exper
       except Exception as e:
         print('{} failed, error: '.format(i), end='')
         print(e)
-    # builder = tfds.builder_from_directories(builder_dirs=dirs)
-    # print(builder.info.splits['train'].num_examples)
-    # ds = builder.as_dataset()
+        
     def batch_steps(episode):
       return rlds.transformations.batch(
         episode[rlds.STEPS], size=2, shift=1, drop_remainder=True)
@@ -227,7 +212,7 @@ def build_experiment_config(env_name,eval=False,plant=None, stabi=None) -> exper
   checkpointingConfig.time_delta_minutes = 10
   checkpointingConfig.add_uid = False
   checkpointingConfig.replay_checkpointing_time_delta_minutes = 1
-  num_steps = FLAGS.num_steps  # int(5000 * 2**5)
+  num_steps = FLAGS.num_steps  
   eval_every = int(num_steps / 20)
 
   return experiments.ExperimentConfig(
@@ -280,9 +265,7 @@ def main(_):
   if trainFresh:
     import os
     import shutil
-    dirToRm = '/home/kenny/acme/' + '{}/PWIL_envFix'.format(robot)
-    if FLAGS.stabi:
-      dirToRm += '_stabi'
+    dirToRm = '/home/{}/acme/'.format(uname) + '{}/PWIL_envFix'.format(robot)
     if os.path.isdir(dirToRm):
       shutil.rmtree(dirToRm)
 
